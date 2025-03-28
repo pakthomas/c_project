@@ -4,6 +4,7 @@
 
 #ifndef BMP8_H
 #define BMP8_H
+//definition of a structured type t_bmp8 to represent an 8-bit grayscale image
 typedef struct {
     unsigned char header[54];
     unsigned char colorTable[1024];

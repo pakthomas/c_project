@@ -1,3 +1,4 @@
+#include <stdlib.h>
 //
 // Created by Thomas on 3/21/2025.
 //
@@ -6,4 +7,10 @@ void bmp8_saveImage(const char * filename, t_bmp8 * img);
 void bmp8_free(t_bmp8 * img);
 void bmp8_printInfo(t_bmp8 * img);
 
-bmp8_free();
+void bmp8_free(t_bmp8 * image) {
+    if (image) {
+        free(image->data);
+        free(image);
+    }
+
+}
