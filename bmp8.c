@@ -21,8 +21,8 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     }
 
     //we read the information with the fread
-    fread(img->header, sizeof(unsigned char), 54, f);
-    fread(img->colorTable, sizeof(unsigned char), 1024, f);
+    fread(img->header, sizeof(unsigned char), 54, fptr);
+    fread(img->colorTable, sizeof(unsigned char), 1024, fptr);
 
     //we extract the informations
     img->width = *(unsigned int *)&img->header[18];
