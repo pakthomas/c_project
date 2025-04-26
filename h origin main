@@ -1,0 +1,48 @@
+[33mcommit 8bef2a58f50a4579ca68cda86d2e9a7beb4338fe[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: laure <laure.szymanski@efrei.net>
+Date:   Fri Mar 28 11:07:03 2025 +0100
+
+    free function added
+
+[33mcommit f10205a105f9d56b0dc17a39f3dc78cea9d27ea6[m
+Author: laure <laure.szymanski@efrei.net>
+Date:   Fri Mar 28 11:06:05 2025 +0100
+
+    free function added
+
+[33mcommit 289c4cd4ad9b5be95637b17ede131830adfc7f20[m
+Author: laure <laure.szymanski@efrei.net>
+Date:   Fri Mar 21 12:09:48 2025 +0100
+
+    test
+
+[33mcommit fa73f8a188c3735e61ef04a0cf5115d1d7ef09a6[m
+Merge: 609ddaa 4a6a50c
+Author: Thomas <pakthomas15@gmail.com>
+Date:   Fri Mar 21 11:43:09 2025 +0100
+
+    Merge remote-tracking branch 'origin/master'
+
+[33mcommit 609ddaa8c133278b455b906ff397ea56d462c06f[m
+Author: Thomas <pakthomas15@gmail.com>
+Date:   Fri Mar 21 11:42:53 2025 +0100
+
+    added header file and .c file
+
+[33mcommit 4a6a50c28275a93757f2512d33b93ee0cec41f38[m
+Author: shiro342 <laure.szymanski@efrei.net>
+Date:   Fri Mar 21 11:19:14 2025 +0100
+
+    Update README.md
+
+[33mcommit 3f2b865ca2413603088249e37631f7d30a02eebe[m
+Author: Thomas <pakthomas15@gmail.com>
+Date:   Fri Mar 21 11:13:06 2025 +0100
+
+    Initial commit
+
+[33mcommit 5cd7b411b8936cdd780654b115c7055ee9676dad[m
+Author: pakthomas <pakthomas15@gmail.com>
+Date:   Fri Mar 21 11:12:10 2025 +0100
+
+    Create README.md
