@@ -35,7 +35,7 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
         printf("The image is not in 8 bytes.\n");
         fclose(f);
         free(img);
-        return NULL;
+        return 0;
     }
     //we allocate memory for the data of the img
     img->data = (unsigned char *)malloc(img->dataSize);
