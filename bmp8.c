@@ -40,8 +40,8 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     //we allocate memory for the data of the img
     img->data = (unsigned char *)malloc(img->dataSize);
     //we read the data of the img
-    fread(img->data, sizeof(unsigned char), img->dataSize, f);
-    fclose(f);
+    fread(img->data, sizeof(unsigned char), img->dataSize, fptr);
+    fclose(fptr);
 
     return img;
 }
