@@ -33,7 +33,7 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     //we verify that the img is in 8bytes
     if (img->colorDepth != 8) {
         printf("The image is not in 8 bytes.\n");
-        fclose(f);
+        fclose(fptr);
         free(img);
         return 0;
     }
