@@ -46,13 +46,41 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     return img;
 }
 
-
-
-
-
-
-
-    return 0;
+//creation of the void function
+void bmp8_saveImage(const char *filename, t_bmp8 *img) {
+    FILE *fptr = fopen(filename, "wb");
+    if (fptr == 0) {
+        printf("impossible to create %s\n", filename);
+        return;
+    }
+    fwrite(img->header, sizeof(unsigned char), 54, fptr);
+    fwrite(img->colorTable, sizeof(unsigned char), 1024, fptr);
+    fwrite(img->data, sizeof(unsigned char), img->dataSize, fptr);
+    fclose(fptr);
+}
+// creation of the free function to free the data in the structure
+void bmp8_free(t_bmp8 *img) {
+    if (img != 0) {
+        if (img->data != 0) {
+            free(img->data);
+        }
+        free(img);
+    }
+}
+//creation of the print info function
+void bmp8_printInfo(t_bmp8 *img) {
+    printf("Image Info:\n");
+    printf("Width: %u\n", img->width);
+    printf("Height: %u\n", img->height);
+    printf("Color Depth: %u\n", img->colorDepth);
+    printf("Data Size: %u\n", img->dataSize);
+}
+// creation of the negative function
+void bmp8_negative(t_bmp8 *img) {
+    for (unsigned int i = 0; i < img->dataSize; i++) {
+        //for each pixel we substract 255
+        img->data[i] = 255 - img->data[i];
+    }
 }
 
 //creation of the brightness function
