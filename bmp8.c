@@ -5,16 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bmp8.h"
+
+//creation the loadImage function
 t_bmp8 * bmp8_loadImage(const char * filename) {
     FILE* fptr;
     fptr = fopen(filename, "r");
 
     if (fptr == NULL) {
-        printf("The file is not opened. The program will "
-               "now exit.");
+        printf("The file is not opened. The program will now exit.");
         return 0;
     }
-    //we creat the structure img to keep the informations
+    //we create the structure img in order to save the information
     t_bmp8 *img = (t_bmp8 *)malloc(sizeof(t_bmp8));
     if (!img) {
         printf("fail of the memory location\n");
@@ -22,15 +23,15 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
         return 0;
     }
 
-    //we read the information with the fread
+    //we read the information with the fread function
     fread(img->header, sizeof(unsigned char), 54, fptr);
     fread(img->colorTable, sizeof(unsigned char), 1024, fptr);
 
-    //we extract the informations
-    img->width = *(unsigned int *)&img->header[18];
-    img->height = *(unsigned int *)&img->header[22];
-    img->colorDepth = *(unsigned int *)&img->header[28];
-    img->dataSize = *(unsigned int *)&img->header[34];
+    //we extract the information from the header
+    img->width = *(unsigned int *)&img->header[18]; //Accessing image width (because offset = 18)
+    img->height = *(unsigned int *)&img->header[22]; //Accessing image height (because offset = 22)
+    img->colorDepth = *(unsigned int *)&img->header[28];//Accessing color depth (because offset = 28)
+    img->dataSize = *(unsigned int *)&img->header[34];// Accessing dataSize (bcs offset = 34)
 
     //we verify that the img is in 8bytes
     if (img->colorDepth != 8) {
@@ -44,7 +45,6 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     //we read the data of the img
     fread(img->data, sizeof(unsigned char), img->dataSize, fptr);
     fclose(fptr);
-
     return img;
 }
 
@@ -100,7 +100,7 @@ void bmp8_brightness(t_bmp8 *img, int value) {
 //creation of the threshold function; to creat a balck and white img
 // if the value of the pixel>threshold the pixel is set to 255, if it is bellow it is set to 0
 void bmp8_threshold(t_bmp8 *img, int threshold) {
-    for (unsigned int i = 0; i < img->dataSize; i++) {
+    for (unsigned int i = 0; i< img->dataSize; i++) {
         if (img->data[i] >= threshold)
             img->data[i] = 255;
         else
@@ -116,12 +116,12 @@ void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
 
     memcpy(newData, img->data, img->dataSize);
 
-    for (unsigned int y = 1; y < img->height - 1; y++) {
-        for (unsigned int x = 1; x < img->width - 1; x++) {
+    for (unsigned int y = 1;y < img->height-1; y++) {
+        for (unsigned int x = 1; x < img->width -1;x++) {
             float sum = 0.0f;
             for (int j = -n; j <= n; j++) {
                 for (int i = -n; i <= n; i++) {
-                    int pixel = img->data[(y - j) * img->width + (x - i)];
+                    int pixel = img->data[(y+j) * img->width + (x-i)];
                     sum += pixel * kernel[j + n][i + n];
                 }
             }
@@ -130,7 +130,6 @@ void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
             newData[y * img->width + x] = (unsigned char)sum;
         }
     }
-
     free(img->data);
     img->data = newData;
 }
