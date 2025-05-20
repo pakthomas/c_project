@@ -268,6 +268,19 @@ void bmp24_brightness (t_bmp24 * img,int value) {
         }
     }
 }
+//creation of the compute histogram function, the function goes through each function and store its value in a list => the aim of this funcction is to count how many pixels there is for each gray color in the file
+void bmp8_computeHistogram(t_bmp8 *img, int histogram[256]) {
+    // initialise all possible value of the pixels to zero
+    for (int i = 0; i < 256; i++) {
+        histogram[i] = 0;
+    }
+
+    // go through every pixel and add +1 to the value of the color of the pixel
+    for (unsigned int i = 0; i < img->dataSize; i++) {
+        int gray = img->data[i];
+        histogram[gray]++;
+    }
+}
 
 
 
