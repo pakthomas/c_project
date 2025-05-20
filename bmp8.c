@@ -136,6 +136,74 @@ void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
 
 
 
+t_bmp24 * bmp24_loadImage (const char * filename){
+    FILE * fptr;
+    t_bmp24 * img  = malloc(sizeof(t_bmp24));
+    fptr =fopen(filename,"rb");
+    if (fptr == NULL) {
+        printf("Error! The program will now exit.");
+        return 0;
+    }
+    t_bmp_header header;
+    t_bmp24 header_info;
+    file_rawRead(BITMAP_MAGIC, &header, sizeof(t_bmp_header), 1, fptr);
+    file_rawRead(BITMAP_SIZE, &header_info, sizeof(t_bmp_header), 1, fptr);
+    file_rawWrite(BITMAP_MAGIC, &header, sizeof(t_bmp_header), 1, img);
+    file_rawWrite(BITMAP_SIZE, &header_info, sizeof(t_bmp_header), 1, img);
+    bmp24_readPixelData(img, fptr);
+    fclose(fptr);
+    return img;
+}
+
+void bmp24_saveImage (t_bmp24 * img, const char * filename) {
+    FILE * fptr;
+    fptr =fopen(filename,"rb");
+    t_bmp_header header;
+    if (fptr == NULL) {
+        printf("Error! The program will now exit.");
+        return;
+    }
+    file_rawWrite( BITMAP_MAGIC,&header, HEADER_SIZE, 1, fptr);
+    bmp24_writePixelData(img,fptr);
+    fclose(fptr);
+}
+
+void bmp24_negative(t_bmp24 *img) {
+    for (unsigned int i = 0; i < img->height; i++) {
+        for (unsigned int j = 0; j < img->width; j++) {
+            img->data[i][j].red = 255 - img->data[i][j].red;
+            img->data[i][j].green = 255 - img->data[i][j].green;
+            img->data[i][j].blue = 255 - img->data[i][j].blue;
+        }
+    }
+}
+
+void bmp24_grayscale (t_bmp24 * img) {
+    for (unsigned int i = 0; i < img->height; i++) {
+        for (unsigned int j = 0; j < img->width; j++) {
+            int average = (img->data[i][j].red+img->data[i][j].green+img->data[i][j].blue)/3;
+            img->data[i][j].red = average;
+            img->data[i][j].green = average;
+            img->data[i][j].blue = average;
+        }
+    }
+}
+
+void bmp24_brightness (t_bmp24 * img,int value) {
+    for (unsigned int i = 0; i < img->height; i++) {
+        for (unsigned int j = 0; j < img->width; j++) {
+            if (img->data[i][j].red + value <= 255)
+            img->data[i][j].red = (img->data[i][j].red+value);
+            else img->data[i][j].red = 255;
+            if (img->data[i][j].green + value <= 255)
+            img->data[i][j].green = (img->data[i][j].green+value);
+            else img->data[i][j].green = 255;
+            if (img->data[i][j].blue + value <= 255)
+            img->data[i][j].blue = (img->data[i][j].blue+value);
+            else img->data[i][j].blue = 255;
+        }
+    }
+}
 
 
 
