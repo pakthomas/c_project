@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bmp8.h"
-#include <math.h>
 // Offsets for the BMP header
 #define BITMAP_MAGIC 0x00 // offset 0
 #define BITMAP_SIZE 0x02 // offset 2
@@ -39,7 +38,7 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     }
 
     //we read the information with the fread function
-    fread(img->header, sizeof(unsigned char), 54, fptr); //using an unsigned allow the variables to take positive values.
+    fread(img->header, sizeof(unsigned char), 54, fptr);
     fread(img->colorTable, sizeof(unsigned char), 1024, fptr);
 
     //we extract the information from the header
@@ -66,14 +65,13 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
 //creation of the void function
 void bmp8_saveImage(const char *filename, t_bmp8 *img) {
     FILE *fptr = fopen(filename, "wb");
-    if (!fptr) {
-        printf("Impossible %s\n", filename);
+    if (fptr == 0) {
+        printf("impossible to create %s\n", filename);
         return;
     }
-
-    fwrite(img->header, sizeof(char), 54, fptr);
-    fwrite(img->colorTable, sizeof(char), 1024, fptr);
-    fwrite(img->data, sizeof(char), img->dataSize, fptr);
+    fwrite(img->header, sizeof(unsigned char), 54, fptr);
+    fwrite(img->colorTable, sizeof(unsigned char), 1024, fptr);
+    fwrite(img->data, sizeof(unsigned char), img->dataSize, fptr);
     fclose(fptr);
 }
 // creation of the free function to free the data in the structure
@@ -129,7 +127,9 @@ void bmp8_threshold(t_bmp8 *img, int threshold) {
 void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
     int n = kernelSize / 2;
     unsigned char *newData = (unsigned char *)malloc(img->dataSize);
+
     memcpy(newData, img->data, img->dataSize);
+
     for (unsigned int y = 1;y < img->height-1; y++) {
         for (unsigned int x = 1; x < img->width -1;x++) {
             float sum = 0.0f;
