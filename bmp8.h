@@ -64,7 +64,14 @@ typedef struct {
     uint8_t green;
     uint8_t blue;
 } t_pixel;
-
+typedef struct {
+    t_bmp_header header;
+    t_bmp_info header_info;
+    int width;
+    int height;
+    int colorDepth;
+    t_pixel **data;
+} t_bmp24;
 
 //definition of the functions
 
