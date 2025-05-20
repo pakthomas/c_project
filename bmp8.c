@@ -133,6 +133,56 @@ void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
     free(img->data);
     img->data = newData;
 }
+t_bmp24 * bmp24_allocate (int width, int height, int colorDepth) {
+    t_bmp24 * img = (t_bmp24 *)malloc(sizeof(t_bmp24));
+    return img;
+}
+void file_rawRead (uint32_t position, void * buffer, uint32_t size, size_t n, FILE * file) {
+fseek(file, position, SEEK_SET);
+fread(buffer, size, n, file);
+}
+
+void file_rawWrite (uint32_t position, void * buffer, uint32_t size, size_t n, FILE * file) {
+    fseek(file, position, SEEK_SET);
+    fwrite(buffer, size, n, file);
+}
+
+void bmp24_readPixelData(t_bmp24 *image, FILE *file) {
+    // Get the offset to the pixel data (stored at byte 10 in the header)
+    uint32_t offset = *(uint32_t *)(((uint8_t *)&image->header) + BITMAP_OFFSET);
+    fseek(file, offset, SEEK_SET);
+
+    int width = image->width;
+    int height = image->height;
+
+    for (int y = height - 1; y >= 0; y--) { // BMP rows start from bottom to top and from left to right -_-
+        for (int x = 0; x < width; x++) {
+            uint8_t rgb[3];
+            if (fread(rgb, sizeof(uint8_t), 3, file) != 3) {
+                fprintf(stderr, "Error reading pixel at (%d, %d)\n", x, y);
+                return;
+            }
+            //store the RGB values of each pixel:
+            image->data[y][x].red   = rgb[0];
+            image->data[y][x].green = rgb[1];
+            image->data[y][x].blue  = rgb[2];
+        }
+    }
+}
+
+void bmp24_writePixelData (t_bmp24 * image, FILE * file) {
+    for (int y = image->height - 1; y >= 0; y--) {
+        for (int x = 0; x < image->width; x++) {
+            uint8_t rgb[3];
+            rgb[0] = image->data[y][x].red;
+            rgb[1] = image->data[y][x].green;
+            rgb[2] = image->data[y][x].blue;
+            fwrite(rgb, sizeof(uint8_t), 3, file); // stores the rgb composition of the pixel in the file
+                return;
+        }
+    }
+}
+
 
 
 
