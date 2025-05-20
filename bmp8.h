@@ -4,6 +4,9 @@
 
 #ifndef BMP8_H
 #define BMP8_H
+
+#include <stdint.h>
+
 //definition of a structured type t_bmp8
 // Offsets for the BMP header
 #define BITMAP_MAGIC 0x00 // offset 0
