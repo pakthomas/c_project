@@ -281,6 +281,33 @@ void bmp8_computeHistogram(t_bmp8 *img, int histogram[256]) {
         histogram[gray]++;
     }
 }
+void bmp8_equalizeHistogram(t_bmp8 *img) {
+    int histogram[256] = {0};
+
+    // step 1 : Calculate the histogram of the original image
+    for (unsigned int i = 0; i < img->dataSize; i++) {
+        histogram[img->data[i]]++;
+    }
+
+    // step 2 : Calculate the cumulative histogram using a CDF
+    int cdf[256];
+    cdf[0] = histogram[0];
+    for (int i = 1; i < 256; i++) {
+        cdf[i] = cdf[i - 1] + histogram[i];
+    }
+
+    // step 3 :Normalize the CDF to obtain a new scale of gray levels.
+    int totalPixels = img->width * img->height;
+    unsigned char mapping[256];
+    for (int i = 0; i < 256; i++) {
+        mapping[i] = (unsigned char)((cdf[i] - cdf[0]) * 255 / (totalPixels - cdf[0]));
+    }
+
+    // step 4 : Apply the transformation to each pixel of the original image using the new scale of gray levels.
+    for (unsigned int i = 0; i < img->dataSize; i++) {
+        img->data[i] = mapping[img->data[i]];
+    }
+}
 
 
 
