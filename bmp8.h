@@ -45,7 +45,8 @@ typedef struct {
     uint32_t size;
     uint16_t reserved1;
     uint16_t reserved2;
-    uint32_t offset; } t_bmp_header;
+    uint32_t offset;
+} t_bmp_header;
 typedef struct {
     uint32_t size;
     int32_t width;
