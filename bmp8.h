@@ -90,4 +90,18 @@ void bmp24_free (t_bmp * img);
 //Convulition filers
 t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int kernelSize);
 
+//read and write pixel data
+void bmp24_readPixelValue (t_bmp24 * image, int x, int y, FILE * file);
+void bmp24_readPixelData (t_bmp24 * image, FILE * file);
+void bmp24_writePixelValue (t_bmp24 * image, int x, int y, FILE * file);
+void bmp24_writePixelData (t_bmp24 * image, FILE * file);
+
+
+//Loading and saving 24-bit Images
+t_bmp24 * bmp24_loadImage (const char * filename);
+void bmp24_saveImage (t_bmp24 * img, const char * filename);
+
+//Get access to header in 24 bytes image
+void file_rawRead (uint32_t position, void * buffer, uint32_t size, size_t n, FILE * file)
+
 #endif
