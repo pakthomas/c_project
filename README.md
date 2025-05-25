@@ -26,6 +26,7 @@ You must open an image before applying a filter.
 
 When pressing 1, you will get the following question :\
 **Is the image:**
+
 0. Grayscale (8-bit)
 1. Color (24-bit)
 
@@ -53,5 +54,4 @@ You will then receive this message : \
 
 
 Each filter modifies the image in some way or another, and we highly recommend the user to try every possibility!
-
 
