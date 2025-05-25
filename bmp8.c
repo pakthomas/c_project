@@ -309,12 +309,10 @@ void bmp8_equalizeHistogram(t_bmp8 *img) {
     }
 }
 
-int * bmp8_computeHistogram(t_bmp8 *img) {
-    // Allocate memory for the histogram (256 gray levels, initialized to 0)
-    int *hist = (int *)calloc(256, sizeof(int));
-    if (hist == NULL) {
-        printf("Error: could not allocate memory for histogram\n");
-        return NULL;
+unsigned int * bmp8_computeHistogram(t_bmp8 * img) {
+    int histogram[256];
+    for (int i = 0; i < 256; i++) {
+        histogram[i] = 0;
     }
 
     // Loop over all pixels in the image data
