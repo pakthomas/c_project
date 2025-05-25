@@ -6,118 +6,174 @@
 #include "bmp8.c"
 
 
-int main(){
-    int choice;
-    char filename[256];
-    char output[256];
-    t_bmp8 *img8 = NULL;
-    t_bmp24 *img24 = NULL;
+void choose_filter(void * img, int value); // Déclaration préalable
 
-    do {
-        printf("\n========== BMP IMAGE PROCESSING ==========\n");
-        printf("1. Load 8-bit BMP Image\n");
-        printf("2. Load 24-bit BMP Image\n");
-        printf("3. Show Image Info (8-bit only)\n");
-        printf("4. Save Image\n");
-        printf("5. Apply Negative\n");
-        printf("6. Adjust Brightness\n");
-        printf("7. Threshold (8-bit only)\n");
-        printf("8. Equalize Histogram (8-bit only)\n");
-        printf("9. Convert 24-bit to Grayscale\n");
-        printf("10. Exit\n");
-        printf("Select an option: ");
+int main() {
+    int choice;
+    char file_name[100];
+    int is_color = -1; // 0 = noir et blanc, 1 = couleur, -1 = aucune image chargée
+    t_bmp8 * img8 = NULL;
+    t_bmp24 * img24 = NULL;
+
+    while (1) {
+        printf("Please choose an option:\n");
+        printf("1. Open an image\n");
+        printf("2. Save an image\n");
+        printf("3. Apply a filter\n");
+        printf("4. Display image information\n");
+        printf("5. Quit\n");
+        printf(">>> Your choice: ");
         scanf("%d", &choice);
-        getchar(); // consume newline
+        getchar(); // pour consommer le \n
 
         switch (choice) {
+            case 1: {
+                printf("Is the image:\n"
+                       "0. Grayscale (8-bit)\n"
+                       "1. Color (24-bit)\n>>> ");
+                scanf("%d", &is_color);
+                getchar();
+
+                printf("Enter the name of the file: ");
+                scanf("%s", file_name);
+                getchar();
+
+                if (is_color == 1) {
+                    img24 = bmp24_loadImage(file_name);
+                    if (img24 != NULL) printf("Color image loaded successfully!\n");
+                    else printf("Failed to load color image.\n");
+                } else if (is_color == 0) {
+                    img8 = bmp8_loadImage(file_name);
+                    if (img8 != NULL) printf("Grayscale image loaded successfully!\n");
+                    else printf("Failed to load grayscale image.\n");
+                } else {
+                    printf("Invalid selection.\n");
+                    is_color = -1;
+                }
+                break;
+            }
+            case 2: {
+                if (is_color == 1 && img24 != NULL) {
+                    printf("Enter output file name: ");
+                    scanf("%s", file_name);
+                    bmp24_saveImage(file_name, img24);
+                    printf("Color image saved successfully!\n");
+                } else if (is_color == 0 && img8 != NULL) {
+                    printf("Enter output file name: ");
+                    scanf("%s", file_name);
+                    bmp8_saveImage(file_name, img8);
+                    printf("Grayscale image saved successfully!\n");
+                } else {
+                    printf("No image loaded.\n");
+                }
+                break;
+            }
+            case 3: {
+                if (is_color == 0 && img8 != NULL) {
+                    choose_filter(img8, is_color); // Appelle le sous-menu des filtres pour img8
+                } else if (is_color == 1 && img24 != NULL) {
+                    printf("Filter menu for color images is not implemented yet.\n");
+                } else {
+                    printf("No image loaded.\n");
+                }
+                break;
+            }
+            case 4: {
+                if (is_color == 1 && img24 != NULL) {
+                    // bmp24_printInfo(img24);
+                } else if (is_color == 0 && img8 != NULL) {
+                    bmp8_printInfo(img8);
+                } else {
+                    printf("No image loaded.\n");
+                }
+                break;
+            }
+            case 5: {
+                printf("Goodbye!\n");
+                return 0;
+            }
+            default: {
+                printf("Invalid choice. Please try again.\n");
+            }
+        }
+    }
+}
+
+void choose_filter(void* img, int type) {
+    int filter_choice;
+
+    while (1) {
+        printf("Please choose a filter:\n");
+        printf("1. Negative\n");
+        printf("2. Brightness\n");
+        printf("3. Black and white\n");
+        printf("4. Box Blur\n");
+        printf("5. Gaussian blur\n");
+        printf("6. Sharpness\n");
+        printf("7. Outline\n");
+        printf("8. Emboss\n");
+        printf("9. Return to the previous menu\n");
+        printf(">>> Your choice: ");
+        scanf("%d", &filter_choice);
+        getchar();
+
+        switch (filter_choice) {
             case 1:
-                printf("Enter the filename: ");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\n")] = 0;
-                img8 = bmp8_loadImage(filename);
-                if (img8) printf("Image loaded successfully.\n");
+                if (type == 0) bmp8_negative((t_bmp8*)img);
+                else if (type == 1) bmp24_negative((t_bmp24*)img);
                 break;
 
-            case 2:
-                printf("Enter the filename: ");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\n")] = 0;
-                img24 = bmp24_loadImage(filename);
-                if (img24) printf("Image loaded successfully.\n");
+            case 2: {
+                int brightness_value;
+                printf("Enter the brightness level (-255 to 255): ");
+                scanf("%d", &brightness_value);
+                getchar();
+                if (brightness_value < -255 || brightness_value > 255) {
+                    printf("The brightness level is not in the valid range.\n");
+                    break;
+                }
+                if (type == 0) bmp8_brightness((t_bmp8*)img, brightness_value);
+                else if (type == 1) bmp24_brightness((t_bmp24*)img, brightness_value);
                 break;
+            }
 
             case 3:
-                if (img8) bmp8_printInfo(img8);
-                else printf("No 8-bit image loaded.\n");
+                if (type == 0) bmp8_blackWhite((t_bmp8*)img);
+                else printf("Black and white filter not available for color images.\n");
                 break;
 
             case 4:
-                printf("Enter output filename: ");
-                fgets(output, sizeof(output), stdin);
-                output[strcspn(output, "\n")] = 0;
-                if (img8)
-                    bmp8_saveImage(output, img8);
-                else if (img24)
-                    bmp24_saveImage(img24, output);
-                else
-                    printf("No image loaded.\n");
+                if (type == 0) bmp8_boxBlur((t_bmp8*)img);
+                else printf("Box blur filter not available for color images yet.\n");
                 break;
 
             case 5:
-                if (img8) bmp8_negative(img8);
-                else if (img24) bmp24_negative(img24);
-                else printf("No image loaded.\n");
+                if (type == 0) bmp8_gaussianBlur((t_bmp8*)img);
+                else printf("Gaussian blur not implemented for color images.\n");
                 break;
 
-            case 6: {
-                int value;
-                printf("Enter brightness value (-255 to 255): ");
-                scanf("%d", &value);
-                if (img8) bmp8_brightness(img8, value);
-                else if (img24) bmp24_brightness(img24, value);
-                else printf("No image loaded.\n");
+            case 6:
+                if (type == 0) bmp8_sharpen((t_bmp8*)img);
+                else printf("Sharpen filter not implemented for color images.\n");
                 break;
-            }
 
-            case 7: {
-                if (!img8) {
-                    printf("No 8-bit image loaded.\n");
-                    break;
-                }
-                int threshold;
-                printf("Enter threshold value (0 to 255): ");
-                scanf("%d", &threshold);
-                bmp8_threshold(img8, threshold);
+            case 7:
+                if (type == 0) bmp8_outline((t_bmp8*)img);
+                else printf("Outline filter not implemented for color images.\n");
                 break;
-            }
 
             case 8:
-                if (img8)
-                    bmp8_equalizeHistogram(img8);
-                else
-                    printf("No 8-bit image loaded.\n");
+                if (type == 0) bmp8_emboss((t_bmp8*)img);
+                else printf("Emboss filter not implemented for color images.\n");
                 break;
 
             case 9:
-                if (img24)
-                    bmp24_grayscale(img24);
-                else
-                    printf("No 24-bit image loaded.\n");
-                break;
-
-            case 10:
-                printf("Exiting...\n");
-                break;
+                return;
 
             default:
-                printf("Invalid option. Try again.\n");
+                printf("Invalid choice. Please try again.\n");
         }
 
-    } while (choice != 10);
-
-    if (img8) bmp8_free(img8);
-    // bmp24_free not implemented, add if needed
-    return 0;
+        printf("Filter applied successfully!\n\n");
+    }
 }
-
-
