@@ -314,17 +314,12 @@ unsigned int * bmp8_computeHistogram(t_bmp8 * img) {
     for (int i = 0; i < 256; i++) {
         histogram[i] = 0;
     }
-
-    // Loop over all pixels in the image data
-    for (int i = 0; i < img->dataSize; i++) {
-        // Get the pixel value (0-255)
-        int pixel = (unsigned char)img->data[i];
-        // Increase the count for that pixel value in the histogram
-        hist[pixel]++;
+    for (int i = 0; img->width ; i++) {
+        for (int j = 0; img->height ; j++) {
+            histogram[img->data[i+j]]++;//1. Calculate the histogram of the original image.
+        }
     }
-
-    // Return the histogram array (int[256])
-    return hist;
+    return histogram;
 }
 
 
