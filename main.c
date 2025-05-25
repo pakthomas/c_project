@@ -1,3 +1,10 @@
+/**
+*  main.c
+ * Thomas PAK and Laure SZYMANSKI
+ * Main file for loading, saving, filtering, and displaying BMP images in both 8-bit (grayscale)
+ *        and 24-bit (color) formats. Provides a command-line menu interface for user interaction.
+ *
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,16 +13,26 @@
 #include "bmp8.c"
 
 
-void choose_filter(void * img, int value); // Déclaration préalable
 
+void choose_filter(void * img, int value); // Forward declaration for filter menu
+
+/**
+ *  Main interactive loop that allows users to:
+ *        - Open a BMP image
+ *        - Save a BMP image
+ *        - Apply filters
+ *        - Display image info
+ *        - Exit the program
+ */
 int main() {
     int choice;
     char file_name[100];
-    int is_color = -1; // 0 = noir et blanc, 1 = couleur, -1 = aucune image chargée
+    int is_color = -1; // Image type flag: -1 = no image loaded, 0 = grayscale, 1 = color
     t_bmp8 * img8 = NULL;
     t_bmp24 * img24 = NULL;
 
     while (1) {
+        // Display main menu
         printf("Please choose an option:\n");
         printf("1. Open an image\n");
         printf("2. Save an image\n");
@@ -24,10 +41,11 @@ int main() {
         printf("5. Quit\n");
         printf(">>> Your choice: ");
         scanf("%d", &choice);
-        getchar(); // pour consommer le \n
+        getchar(); // no take off the newline character
 
         switch (choice) {
             case 1: {
+                // Load image (grayscale or color)
                 while (is_color < 0 || is_color > 1) {
                     printf("Is the image:\n"
                            "0. Grayscale (8-bit)\n"
@@ -54,6 +72,7 @@ int main() {
                 break;
             }
             case 2: {
+                // Save image
                 if (is_color == 1 && img24 != NULL) {
                     printf("Enter output file name: ");
                     scanf("%s", file_name);
@@ -70,6 +89,7 @@ int main() {
                 break;
             }
             case 3: {
+                // Apply selected filter
                 if (is_color == 0 && img8 != NULL) {
                     choose_filter(img8, is_color); // Appelle le sous-menu des filtres pour img8
                 } else if (is_color == 1 && img24 != NULL) {
@@ -80,6 +100,7 @@ int main() {
                 break;
             }
             case 4: {
+                // Display image information
                 if (is_color == 1 && img24 != NULL) {
                     bmp24_printInfo(img24);
                 } else if (is_color == 0 && img8 != NULL) {
@@ -90,6 +111,7 @@ int main() {
                 break;
             }
             case 5: {
+                // Exit the program
                 printf("Goodbye!\n");
                 return 0;
             }
@@ -99,8 +121,6 @@ int main() {
         }
     }
 }
-
-#include <stdlib.h>
 
 float** box_blur_kernel() {
     float kernel_values[3][3] = {

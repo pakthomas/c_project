@@ -1,6 +1,11 @@
-//
-// Created by Thomas on 3/21/2025.
-//
+/**
+* bmp8.c
+ *
+ * Thomas PAK and Laure SZYMANSKI
+ * Description: This file provides functions to load, save, manipulate,
+ * and free 8-bit grayscale BMP images. It includes utility functions such
+ * as loading image and applying image
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,8 +25,15 @@
 #define INFO_SIZE 0x28 // 40 octets
 // Constant for the color depth
 #define DEFAULT_DEPTH 0x18 // 24
-//creation the loadImage function
 
+//creation the loadImage function
+/**
+ * Loads a grayscale 8-bit BMP image from a file.
+ *
+ * the paraleter filename gives the path to the BMP file to load
+ * It returns a pointer to t_bmp8 structure containing image data,
+ *         or NULL if the load fails
+ */
 t_bmp8 * bmp8_loadImage(const char * filename) {
     FILE* fptr;
     fptr = fopen(filename, "r");
@@ -63,7 +75,14 @@ t_bmp8 * bmp8_loadImage(const char * filename) {
     return img;
 }
 
-//creation of the void function
+
+
+/**
+ * Saves a grayscale BMP image to a file.
+ *
+
+ * the parameter img is a pointer to t_bmp8 structure containing image data to save
+ */
 void bmp8_saveImage(const char *filename, t_bmp8 *img) {
     FILE *fptr = fopen(filename, "wb");
     if (fptr == 0) {
@@ -75,7 +94,11 @@ void bmp8_saveImage(const char *filename, t_bmp8 *img) {
     fwrite(img->data, sizeof(unsigned char), img->dataSize, fptr);
     fclose(fptr);
 }
-// creation of the free function to free the data in the structure
+/**
+ * Frees memory allocated for a BMP image.
+ *
+ * the parameter img is a pointer to t_bmp8 structure to free
+ */
 void bmp8_free(t_bmp8 *img) {
     if (img != 0) {
         if (img->data != 0) {
@@ -84,7 +107,11 @@ void bmp8_free(t_bmp8 *img) {
         free(img);
     }
 }
-//creation of the print info function
+/**
+ * Prints image the data to the console.
+ *
+ * the parameter img is a pointer to t_bmp8 structure to display info
+ */
 void bmp8_printInfo(t_bmp8 *img) {
     printf("Image Info:\n");
     printf("Width: %u\n", img->width);
@@ -93,6 +120,11 @@ void bmp8_printInfo(t_bmp8 *img) {
     printf("Data Size: %u\n", img->dataSize);
 }
 // creation of the negative function
+/**
+ * Applies a negative filter to the image (inverts pixel values).
+ *
+ * the parameter img is a pointer to t_bmp8 image
+ */
 void bmp8_negative(t_bmp8 *img) {
     for (unsigned int i = 0; i < img->dataSize; i++) {
         //for each pixel we substract 255
@@ -100,8 +132,13 @@ void bmp8_negative(t_bmp8 *img) {
     }
 }
 
-//creation of the brightness function
-// if the value of the pixel is >255 it is set as 255 if its bellow 0 it is set as 0.
+/**
+ * Adjusts image brightness by adding a value to each pixel.
+ * Pixel values are between [0, 255].
+ *
+ * the parameter image is a pointer to t_bmp8 image
+ * the parameter value is the value to add to each pixel (can be negative)
+ */
 void bmp8_brightness(t_bmp8 *img, int value) {
     for (unsigned int i = 0; i < img->dataSize; i++) {
         int temp = img->data[i] + value;
@@ -111,9 +148,13 @@ void bmp8_brightness(t_bmp8 *img, int value) {
     }
 }
 
-
-//creation of the threshold function; to creat a balck and white img
-// if the value of the pixel>threshold the pixel is set to 255, if it is bellow it is set to 0
+/**
+ * Converts the image to pure black and white based on a threshold.
+ * Pixels >= threshold become 255 (white), others become 0 (black).
+ *
+ * The parameter image is a pointer to t_bmp8 image
+ * the parameter threshold is a threshold value [0, 255]
+ */
 void bmp8_threshold(t_bmp8 *img, int threshold) {
     for (unsigned int i = 0; i< img->dataSize; i++) {
         if (img->data[i] >= threshold)
@@ -124,13 +165,21 @@ void bmp8_threshold(t_bmp8 *img, int threshold) {
 }
 
 
-// creation of the apply filter function
+/**
+ * Applies a convolution filter (kernel) to the image.
+ *
+ * the parameter image is a pointer to t_bmp8 image
+ * the parameter kernel is a 2D convolution matrix (must be square)
+ * the parameter kernelsize  - Size of the kernel
+ */
 void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
-    int n = kernelSize / 2;
+    int n = kernelSize / 2;// Kernel radius
     unsigned char *newData = (unsigned char *)malloc(img->dataSize);
 
+    // Copy original data (used for border pixels)
     memcpy(newData, img->data, img->dataSize);
 
+    // Apply convolution (excluding borders)
     for (unsigned int y = 1;y < img->height-1; y++) {
         for (unsigned int x = 1; x < img->width -1;x++) {
             float sum = 0.0f;
@@ -145,6 +194,6 @@ void bmp8_applyFilter(t_bmp8 *img, float **kernel, int kernelSize) {
             newData[y * img->width + x] = (unsigned char)sum;
         }
     }
-    free(img->data);
-    img->data = newData;
+    free(img->data); // Free original data
+    img->data = newData;// Replace with filtered result
 }
