@@ -161,6 +161,26 @@ t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int Ker
             newData[y * img->width + x] = (unsigned char)sum;
         }
     }
-    free(img->data);
-    img->data = newData;
-}
+    int hist_eq[256];
+    for (int i = 0; i < 256; i++) {
+        hist_eq[i]=round((cumul_histogram[i]-min)/(nb_pixels-min) * 255);//3. Normalize the CDF to obtain a new scale of gray levels.
+
+    }
+    int Y = hist_eq[(int)round(gray)];
+    for (int i = 0; i < img->height; i++) {
+        for (int j = 0; j < img->width; j++) {
+            int R = img->data[i][j].red;
+            int G = img->data[i][j].green;
+            int B = img->data[i][j].blue;
+            double Y = 0.299 * R + 0.587 * G + 0.114 * B;
+            double U = -0.14713 * R - 0.28886 * G + 0.436 * B;
+            double V = 0.615 * R - 0.51499 * G - 0.10001 * B;
+            int R_1 = round(Y + 1.13983 * V);
+            int G_1 = round(Y - 0.39465 * U - 0.58060 * V);
+            int B_1 = round(Y + 2.03211 * U);
+            img->data[i][j].red  = fminf(fmaxf(R_1, 0), 255);
+            img->data[i][j].green = fminf(fmaxf(G_1, 0), 255);
+            img->data[i][j].blue  = fminf(fmaxf(B_1, 0), 255);
+        }
+    }
+}//4. Apply the transformation to each pixel of the original image using the new scale of gray levels.
