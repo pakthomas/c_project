@@ -81,7 +81,7 @@ int main() {
             }
             case 4: {
                 if (is_color == 1 && img24 != NULL) {
-                    // bmp24_printInfo(img24);
+                    bmp24_printInfo(img24);
                 } else if (is_color == 0 && img8 != NULL) {
                     bmp8_printInfo(img8);
                 } else {

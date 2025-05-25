@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "bmp.h"
-#include <math.h>
+#include "bmp24.h"
 // Offsets for the BMP header
 #define BITMAP_MAGIC 0x00 // offset 0
 #define BITMAP_SIZE 0x02 // offset 2
@@ -36,76 +35,210 @@ void file_rawWrite (uint32_t position, void * buffer, uint32_t size, size_t n, F
     fwrite(buffer, size, n, file);
 }
 
-void bmp24_readPixelData(t_bmp24 *image, FILE *file) {
-    // Get the offset to the pixel data (stored at byte 10 in the header)
-    uint32_t offset = *(uint32_t *)(((uint8_t *)&image->header) + BITMAP_OFFSET);
-    fseek(file, offset, SEEK_SET);
+void bmp24_readPixelData(t_bmp24 *img, FILE *fptr) {
+    int w = img->width;
+    int h = img->height;
+    int rowSize = (w * 3 + 3) & ~3;
+    int padding = rowSize - w * 3;
 
-    int width = image->width;
-    int height = image->height;
+    // Allouer la matrice
+    img->data = malloc(h * sizeof(t_pixel*));
+    for (int y = 0; y < h; y++) {
+        img->data[y] = malloc(w * sizeof(t_pixel));
+    }
 
-    for (int y = height - 1; y >= 0; y--) { // BMP rows start from bottom to top and from left to right -_-
-        for (int x = 0; x < width; x++) {
-            uint8_t rgb[3];
-            if (fread(rgb, sizeof(uint8_t), 3, file) != 3) {
-                fprintf(stderr, "Error reading pixel at (%d, %d)\n", x, y);
-                return;
-            }
-            //store the RGB values of each pixel:
-            image->data[y][x].red   = rgb[0];
-            image->data[y][x].green = rgb[1];
-            image->data[y][x].blue  = rgb[2];
+    // Lire ligne par ligne, de bas en haut
+    for (int y = h - 1; y >= 0; y--) {
+        for (int x = 0; x < w; x++) {
+            uint8_t bgr[3];
+            fread(bgr, sizeof bgr, 1, fptr);
+            img->data[y][x].blue  = bgr[0];
+            img->data[y][x].green = bgr[1];
+            img->data[y][x].red   = bgr[2];
         }
+        fseek(fptr, padding, SEEK_CUR);
     }
 }
 
-void bmp24_writePixelData (t_bmp24 * image, FILE * file) {
+
+
+void bmp24_writePixelData(t_bmp24 *image, FILE *file) {
+    int padding = (4 - (image->width * 3) % 4) % 4; // BMP row padding to 4 bytes
+    uint8_t pad[3] = {0, 0, 0};
+
     for (int y = image->height - 1; y >= 0; y--) {
         for (int x = 0; x < image->width; x++) {
             uint8_t rgb[3];
-            rgb[0] = image->data[y][x].red;
+            rgb[2] = image->data[y][x].red;
             rgb[1] = image->data[y][x].green;
-            rgb[2] = image->data[y][x].blue;
-            fwrite(rgb, sizeof(uint8_t), 3, file); // stores the rgb composition of the pixel in the file
-                return;
+            rgb[0] = image->data[y][x].blue;
+            fwrite(rgb, sizeof(uint8_t), 3, file);
         }
+        // Écriture du padding (alignement sur 4 octets)
+        fwrite(pad, sizeof(uint8_t), padding, file);
     }
 }
-
-
-
-
-t_bmp24 * bmp24_loadImage (const char * filename){
-    FILE * fptr;
-    t_bmp24 * img  = malloc(sizeof(t_bmp24));
-    fptr =fopen(filename,"rb");
-    if (fptr == NULL) {
-        printf("Error! The program will now exit.");
-        return 0;
+t_bmp24 *bmp24_loadImage(const char *filename) {
+    FILE *fptr = fopen(filename, "rb");
+    if (!fptr) {
+        printf("Error! Cannot open %s\n", filename);
+        return NULL;
     }
-    t_bmp_header header;
-    t_bmp24 header_info;
-    file_rawRead(BITMAP_MAGIC, &header, sizeof(t_bmp_header), 1, fptr);
-    file_rawRead(BITMAP_SIZE, &header_info, sizeof(t_bmp_header), 1, fptr);
-    file_rawWrite(BITMAP_MAGIC, &header, sizeof(t_bmp_header), 1, img);
-    file_rawWrite(BITMAP_SIZE, &header_info, sizeof(t_bmp_header), 1, img);
+
+    // 1) Lire les 54 octets de header brut
+    uint8_t raw[54];
+    if (fread(raw, 1, 54, fptr) != 54) {
+        printf("Error! Cannot read BMP header.\n");
+        fclose(fptr);
+        return NULL;
+    }
+
+    // 2) Allouer la structure
+    t_bmp24 *img = malloc(sizeof(t_bmp24));
+    if (!img) {
+        printf("Error! Memory allocation failed.\n");
+        fclose(fptr);
+        return NULL;
+    }
+
+    // 3) Décoder le file header
+    img->header.type      = *(uint16_t *)(raw + 0);
+    img->header.size      = *(uint32_t *)(raw + 2);
+    img->header.reserved1 = *(uint16_t *)(raw + 6);
+    img->header.reserved2 = *(uint16_t *)(raw + 8);
+    img->header.offset    = *(uint32_t *)(raw + 10);
+
+    // 4) Décoder le info header
+    img->header_info.size           = *(uint32_t *)(raw + 14);
+    img->header_info.width          = *(int32_t  *)(raw + 18);
+    img->header_info.height         = *(int32_t  *)(raw + 22);
+    img->header_info.planes         = *(uint16_t *)(raw + 26);
+    img->header_info.bits           = *(uint16_t *)(raw + 28);
+    img->header_info.compression    = *(uint32_t *)(raw + 30);
+    img->header_info.imagesize      = *(uint32_t *)(raw + 34);
+    img->header_info.xresolution    = *(int32_t  *)(raw + 38);
+    img->header_info.yresolution    = *(int32_t  *)(raw + 42);
+    img->header_info.ncolors        = *(uint32_t *)(raw + 46);
+    img->header_info.importantcolors= *(uint32_t *)(raw + 50);
+
+    // 5) Initialiser width/height/depth
+    img->width      = img->header_info.width;
+    img->height     = img->header_info.height;
+    img->colorDepth = img->header_info.bits;
+
+    // 6) Sanity checks
+    if (img->width <= 0 || img->height <= 0 || img->colorDepth != 24) {
+        printf("Unsupported BMP: %d×%d @ %d bits\n",
+               img->width, img->height, img->colorDepth);
+        free(img);
+        fclose(fptr);
+        return NULL;
+    }
+
+    // 7) Se placer au début des pixels
+    fseek(fptr, img->header.offset, SEEK_SET);
+
+    // 8) Lire les données pixel
     bmp24_readPixelData(img, fptr);
+
     fclose(fptr);
     return img;
 }
 
-void bmp24_saveImage (t_bmp24 * img, const char * filename) {
-    printf("file : %s", filename);
-    FILE *fptr = fopen(filename, "rb");
-    t_bmp_header header;
-    if (fptr == NULL) {
-        printf("Error! The program will now exit.");
+
+void bmp24_printInfo(t_bmp24 *img) {
+    if (img == NULL) {
+        printf("No image loaded.\n");
         return;
     }
-    file_rawWrite( BITMAP_MAGIC,&header, HEADER_SIZE, 1, fptr);
-    bmp24_writePixelData(img,fptr);
-    fclose(fptr);
+
+    printf("📄 BMP 24-bit Image Information:\n");
+    printf(" - Width         : %d px\n", img->header_info.width);
+    printf(" - Height        : %d px\n", img->header_info.height);
+    printf(" - Bit depth     : %d bits/pixel\n", img->header_info.bits);
+    printf(" - Image size    : %u bytes\n", img->header_info.size);
+    printf(" - File size     : %u bytes\n", img->header.size);
+    printf(" - Pixel offset  : %u bytes\n", img->header.offset);
+    printf(" - Compression   : %u\n", img->header_info.compression);
+    printf(" - Colors used   : %u\n", img->header_info.ncolors);
 }
+
+// Écris headers + pixels
+void bmp24_saveImage(t_bmp24 *img, const char *filename) {
+    FILE *f = fopen(filename, "wb");
+    if (!f) {
+        printf("Cannot create %s\n", filename);
+        return;
+    }
+
+    int w = img->width, h = img->height;
+    int rowSize       = (w*3 + 3) & ~3;    // aligné sur 4
+    int pixelDataSize = rowSize * h;
+    int fileSize      = 14 + 40 + pixelDataSize;
+
+    // --- FILE HEADER (14 octets) ---
+    uint8_t header[14] = {
+        'B','M',                             // magic
+        (uint8_t)(fileSize      &0xFF),     // size little-endian
+        (uint8_t)((fileSize>> 8)&0xFF),
+        (uint8_t)((fileSize>>16)&0xFF),
+        (uint8_t)((fileSize>>24)&0xFF),
+        0,0, 0,0,                            // reserved
+        54,0,0,0                            // offset = 14+40 = 54
+    };
+    fwrite(header, 1, 14, f);
+
+    // --- INFO HEADER (40 octets) ---
+    uint8_t info[40] = {0};
+    // size of this header
+    info[0] = 40;
+    // width
+    info[4] = (uint8_t)(w      &0xFF);
+    info[5] = (uint8_t)((w>> 8)&0xFF);
+    info[6] = (uint8_t)((w>>16)&0xFF);
+    info[7] = (uint8_t)((w>>24)&0xFF);
+    // height
+    info[8]  = (uint8_t)(h      &0xFF);
+    info[9]  = (uint8_t)((h>> 8)&0xFF);
+    info[10] = (uint8_t)((h>>16)&0xFF);
+    info[11] = (uint8_t)((h>>24)&0xFF);
+    // planes (1)
+    info[12] = 1; info[13] = 0;
+    // bits per pixel (24)
+    info[14] = 24; info[15] = 0;
+    // compression = 0 (no compression) → bytes 16..19 left at 0
+    // imageSize (pixelDataSize) little-endian:
+    info[20] = (uint8_t)(pixelDataSize      &0xFF);
+    info[21] = (uint8_t)((pixelDataSize>> 8)&0xFF);
+    info[22] = (uint8_t)((pixelDataSize>>16)&0xFF);
+    info[23] = (uint8_t)((pixelDataSize>>24)&0xFF);
+    // xresolution (pixels/meter) left 0
+    // yresolution (pixels/meter) left 0
+    // ncolors, importantcolors left 0
+
+    fwrite(info, 1, 40, f);
+
+    // --- PIXEL DATA + PADDING ---
+    uint8_t pad[3] = {0,0,0};
+    int padding    = rowSize - w*3;
+
+    for (int y = h - 1; y >= 0; y--) {
+        for (int x = 0; x < w; x++) {
+            uint8_t bgr[3] = {
+                img->data[y][x].blue,
+                img->data[y][x].green,
+                img->data[y][x].red
+            };
+            fwrite(bgr, 1, 3, f);
+        }
+        fwrite(pad, 1, padding, f);
+    }
+
+    fclose(f);
+    printf("✅ Image saved to %s (%d×%d)\n", filename, w, h);
+}
+
+
 
 void bmp24_negative(t_bmp24 *img) {
     for (unsigned int i = 0; i < img->height; i++) {
