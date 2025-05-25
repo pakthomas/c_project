@@ -4,5 +4,5 @@ project(untitled3 C)
 set(CMAKE_C_STANDARD 17)
 
 add_executable(untitled3 main.c
-        bmp8.h
+        bmp.h
         bmp8.c)
