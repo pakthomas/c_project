@@ -258,7 +258,12 @@ void bmp24_emboss(t_bmp24* img) {
     free(kernel);
 }
 
-
+/**
+ *  Displays filter menu and applies selected filter to the image
+ *
+ * the parameter image is a void pointer to the image (either t_bmp8 or t_bmp24)
+ * the parameter type is g0 for grayscale, 1 for color
+ */
 void choose_filter(void* img, int type) {
     int filter_choice;
 
