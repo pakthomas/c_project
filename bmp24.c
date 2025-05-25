@@ -95,8 +95,8 @@ t_bmp24 * bmp24_loadImage (const char * filename){
 }
 
 void bmp24_saveImage (t_bmp24 * img, const char * filename) {
-    FILE * fptr;
-    fptr =fopen(filename,"rb");
+    printf("file : %s", filename);
+    FILE *fptr = fopen(filename, "rb");
     t_bmp_header header;
     if (fptr == NULL) {
         printf("Error! The program will now exit.");

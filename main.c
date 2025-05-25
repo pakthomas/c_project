@@ -28,11 +28,12 @@ int main() {
 
         switch (choice) {
             case 1: {
-                printf("Is the image:\n"
-                       "0. Grayscale (8-bit)\n"
-                       "1. Color (24-bit)\n>>> ");
-                scanf("%d", &is_color);
-                getchar();
+                while (is_color < 0 || is_color > 1) {
+                    printf("Is the image:\n"
+                           "0. Grayscale (8-bit)\n"
+                           "1. Color (24-bit)\n>>> ");
+                    scanf("%d", &is_color);
+                }
 
                 printf("Enter the name of the file: ");
                 scanf("%s", file_name);
@@ -56,7 +57,7 @@ int main() {
                 if (is_color == 1 && img24 != NULL) {
                     printf("Enter output file name: ");
                     scanf("%s", file_name);
-                    bmp24_saveImage(file_name, img24);
+                    bmp24_saveImage(img24, file_name);
                     printf("Color image saved successfully!\n");
                 } else if (is_color == 0 && img8 != NULL) {
                     printf("Enter output file name: ");
@@ -72,7 +73,7 @@ int main() {
                 if (is_color == 0 && img8 != NULL) {
                     choose_filter(img8, is_color); // Appelle le sous-menu des filtres pour img8
                 } else if (is_color == 1 && img24 != NULL) {
-                    printf("Filter menu for color images is not implemented yet.\n");
+                    choose_filter(img24, is_color); // Appelle le sous-menu des filtres pour img24
                 } else {
                     printf("No image loaded.\n");
                 }
@@ -99,6 +100,145 @@ int main() {
     }
 }
 
+#include <stdlib.h>
+
+float** box_blur_kernel() {
+    float kernel_values[3][3] = {
+        {1/9.0f, 1/9.0f, 1/9.0f},
+        {1/9.0f, 1/9.0f, 1/9.0f},
+        {1/9.0f, 1/9.0f, 1/9.0f}
+    };
+    float** kernel = malloc(3 * sizeof(float*));
+    for (int i = 0; i < 3; i++) {
+        kernel[i] = malloc(3 * sizeof(float));
+        for (int j = 0; j < 3; j++) {
+            kernel[i][j] = kernel_values[i][j];
+        }
+    }
+    return kernel;
+}
+
+float** gaussian_blur_kernel() {
+    float kernel_values[3][3] = {
+        {1/16.0f, 2/16.0f, 1/16.0f},
+        {2/16.0f, 4/16.0f, 2/16.0f},
+        {1/16.0f, 2/16.0f, 1/16.0f}
+    };
+    float** kernel = malloc(3 * sizeof(float*));
+    for (int i = 0; i < 3; i++) {
+        kernel[i] = malloc(3 * sizeof(float));
+        for (int j = 0; j < 3; j++) {
+            kernel[i][j] = kernel_values[i][j];
+        }
+    }
+    return kernel;
+}
+
+float** sharpen_kernel() {
+    float kernel_values[3][3] = {
+        { 0, -1,  0},
+        {-1,  5, -1},
+        { 0, -1,  0}
+    };
+    float** kernel = malloc(3 * sizeof(float*));
+    for (int i = 0; i < 3; i++) {
+        kernel[i] = malloc(3 * sizeof(float));
+        for (int j = 0; j < 3; j++) {
+            kernel[i][j] = kernel_values[i][j];
+        }
+    }
+    return kernel;
+}
+
+float** outline_kernel() {
+    float kernel_values[3][3] = {
+        {-1, -1, -1},
+        {-1,  8, -1},
+        {-1, -1, -1}
+    };
+    float** kernel = malloc(3 * sizeof(float*));
+    for (int i = 0; i < 3; i++) {
+        kernel[i] = malloc(3 * sizeof(float));
+        for (int j = 0; j < 3; j++) {
+            kernel[i][j] = kernel_values[i][j];
+        }
+    }
+    return kernel;
+}
+
+float** emboss_kernel() {
+    float kernel_values[3][3] = {
+        {-2, -1,  0},
+        {-1,  1,  1},
+        { 0,  1,  2}
+    };
+    float** kernel = malloc(3 * sizeof(float*));
+    for (int i = 0; i < 3; i++) {
+        kernel[i] = malloc(3 * sizeof(float));
+        for (int j = 0; j < 3; j++) {
+            kernel[i][j] = kernel_values[i][j];
+        }
+    }
+    return kernel;
+}
+
+void bmp24_boxBlur(t_bmp24* img) {
+    float** kernel = box_blur_kernel();
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+    // Free kernel memory
+    for (int i = 0; i < 3; i++) free(kernel[i]);
+    free(kernel);
+}
+
+void bmp24_gaussianBlur(t_bmp24* img) {
+    float** kernel = gaussian_blur_kernel();
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+    for (int i = 0; i < 3; i++) free(kernel[i]);
+    free(kernel);
+}
+
+void bmp24_sharpen(t_bmp24* img) {
+    float** kernel = sharpen_kernel();
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+    for (int i = 0; i < 3; i++) free(kernel[i]);
+    free(kernel);
+}
+
+void bmp24_outline(t_bmp24* img) {
+    float** kernel = outline_kernel();
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+    for (int i = 0; i < 3; i++) free(kernel[i]);
+    free(kernel);
+}
+
+void bmp24_emboss(t_bmp24* img) {
+    float** kernel = emboss_kernel();
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+    for (int i = 0; i < 3; i++) free(kernel[i]);
+    free(kernel);
+}
+
+
 void choose_filter(void* img, int type) {
     int filter_choice;
 
@@ -106,7 +246,7 @@ void choose_filter(void* img, int type) {
         printf("Please choose a filter:\n");
         printf("1. Negative\n");
         printf("2. Brightness\n");
-        printf("3. Black and white\n");
+        printf("3. Black and white (threshold / grayscale)\n");
         printf("4. Box Blur\n");
         printf("5. Gaussian blur\n");
         printf("6. Sharpness\n");
@@ -117,63 +257,104 @@ void choose_filter(void* img, int type) {
         scanf("%d", &filter_choice);
         getchar();
 
-        switch (filter_choice) {
-            case 1:
-                if (type == 0) bmp8_negative((t_bmp8*)img);
-                else if (type == 1) bmp24_negative((t_bmp24*)img);
-                break;
-
-            case 2: {
-                int brightness_value;
-                printf("Enter the brightness level (-255 to 255): ");
-                scanf("%d", &brightness_value);
-                getchar();
-                if (brightness_value < -255 || brightness_value > 255) {
-                    printf("The brightness level is not in the valid range.\n");
+        if (type == 0) { // Grayscale image (bmp8)
+            t_bmp8* img8 = (t_bmp8*)img;
+            switch (filter_choice) {
+                case 1:
+                    bmp8_negative(img8);
+                    break;
+                case 2: {
+                    int brightness;
+                    printf("Enter brightness level (-255 to 255): ");
+                    scanf("%d", &brightness);
+                    getchar();
+                    if (brightness < -255 || brightness > 255) {
+                        printf("Brightness out of range.\n");
+                        break;
+                    }
+                    bmp8_brightness(img8, brightness);
                     break;
                 }
-                if (type == 0) bmp8_brightness((t_bmp8*)img, brightness_value);
-                else if (type == 1) bmp24_brightness((t_bmp24*)img, brightness_value);
-                break;
+                case 3: {
+                    int threshold;
+                    printf("Enter threshold value (0–255): ");
+                    scanf("%d", &threshold);
+                    getchar();
+                    if (threshold < 0 || threshold > 255) {
+                        printf("Threshold must be between 0 and 255.\n");
+                        break;
+                    }
+                    bmp8_threshold(img8, threshold);
+                    break;
+                }
+                case 4:
+                    bmp8_applyFilter(img8, (float**)box_blur_kernel(), 3);
+                    break;
+                case 5:
+                    bmp8_applyFilter(img8, (float**)gaussian_blur_kernel(), 3);
+                    break;
+                case 6:
+                    bmp8_applyFilter(img8, (float**)sharpen_kernel(), 3);
+                    break;
+                case 7:
+                    bmp8_applyFilter(img8, (float**)outline_kernel(), 3);
+                    break;
+                case 8:
+                    bmp8_applyFilter(img8, (float**)emboss_kernel(), 3);
+                    break;
+                case 9:
+                    return;
+                default:
+                    printf("Invalid choice. Please try again.\n");
             }
+            printf("Filter applied successfully!\n\n");
 
-            case 3:
-                if (type == 0) bmp8_blackWhite((t_bmp8*)img);
-                else printf("Black and white filter not available for color images.\n");
-                break;
+        } else if (type == 1) { // Color image (bmp24)
+            t_bmp24* img24 = (t_bmp24*)img;
+            switch (filter_choice) {
+                case 1:
+                    bmp24_negative(img24);
+                    break;
+                case 2: {
+                    int brightness;
+                    printf("Enter brightness level (-255 to 255): ");
+                    scanf("%d", &brightness);
+                    getchar();
+                    if (brightness < -255 || brightness > 255) {
+                        printf("Brightness out of range.\n");
+                        break;
+                    }
+                    bmp24_brightness(img24, brightness);
+                    break;
+                }
+                case 3:
+                    bmp24_grayscale(img24);
+                    break;
+                case 4:
+                    bmp24_boxBlur(img24);
+                    break;
+                case 5:
+                    bmp24_gaussianBlur(img24);
+                    break;
+                case 6:
+                    bmp24_sharpen(img24);
+                    break;
+                case 7:
+                    bmp24_outline(img24);
+                    break;
+                case 8:
+                    bmp24_emboss(img24);
+                    break;
+                case 9:
+                    return;
+                default:
+                    printf("Invalid choice. Please try again.\n");
+            }
+            printf("Filter applied successfully!\n\n");
 
-            case 4:
-                if (type == 0) bmp8_boxBlur((t_bmp8*)img);
-                else printf("Box blur filter not available for color images yet.\n");
-                break;
-
-            case 5:
-                if (type == 0) bmp8_gaussianBlur((t_bmp8*)img);
-                else printf("Gaussian blur not implemented for color images.\n");
-                break;
-
-            case 6:
-                if (type == 0) bmp8_sharpen((t_bmp8*)img);
-                else printf("Sharpen filter not implemented for color images.\n");
-                break;
-
-            case 7:
-                if (type == 0) bmp8_outline((t_bmp8*)img);
-                else printf("Outline filter not implemented for color images.\n");
-                break;
-
-            case 8:
-                if (type == 0) bmp8_emboss((t_bmp8*)img);
-                else printf("Emboss filter not implemented for color images.\n");
-                break;
-
-            case 9:
-                return;
-
-            default:
-                printf("Invalid choice. Please try again.\n");
+        } else {
+            printf("No image loaded or unknown image type.\n");
+            return;
         }
-
-        printf("Filter applied successfully!\n\n");
     }
 }
