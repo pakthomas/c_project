@@ -161,28 +161,21 @@ void file_rawWrite (uint32_t position, void * buffer, uint32_t size, size_t n, F
     fwrite(buffer, size, n, file);
 }
 
-void bmp24_readPixelData(t_bmp24 *image, FILE *file) {
-    // Get the offset to the pixel data (stored at byte 10 in the header)
-    uint32_t offset = *(uint32_t *)(((uint8_t *)&image->header) + BITMAP_OFFSET);
-    fseek(file, offset, SEEK_SET);
-
-    int width = image->width;
-    int height = image->height;
-
-    for (int y = height - 1; y >= 0; y--) { // BMP rows start from bottom to top and from left to right -_-
-        for (int x = 0; x < width; x++) {
-            uint8_t rgb[3];
-            if (fread(rgb, sizeof(uint8_t), 3, file) != 3) {
-                fprintf(stderr, "Error reading pixel at (%d, %d)\n", x, y);
-                return;
-            }
-            //store the RGB values of each pixel:
-            image->data[y][x].red   = rgb[0];
-            image->data[y][x].green = rgb[1];
-            image->data[y][x].blue  = rgb[2];
+unsigned int * bmp8_computeCDF(unsigned int * hist) {
+    int cumul_histogram[256];
+    cumul_histogram[0] = hist[0];
+    int min=hist[0];
+    int nb_pixels = 0;
+    for (int i = 1; i < 256; i++) {
+        cumul_histogram[i] = hist[i]+cumul_histogram[i-1];//2. Calculate the cumulative histogram using a CDF.
+        if (cumul_histogram[i] < min || min ==0) {
+            min = cumul_histogram[i];
         }
+        nb_pixels+=hist[i];
     }
-}
+    int hist_eq[256];
+    for (int i = 0; i < 256; i++) {
+        hist_eq[i]=round((cumul_histogram[i]-min)/(nb_pixels-min) * 255);//3. Normalize the CDF to obtain a new scale of gray levels.
 
 void bmp24_writePixelData (t_bmp24 * image, FILE * file) {
     for (int y = image->height - 1; y >= 0; y--) {
@@ -309,24 +302,17 @@ void bmp8_equalizeHistogram(t_bmp8 *img) {
     }
 }
 
-int * bmp8_computeHistogram(t_bmp8 *img) {
-    // Allocate memory for the histogram (256 gray levels, initialized to 0)
-    int *hist = (int *)calloc(256, sizeof(int));
-    if (hist == NULL) {
-        printf("Error: could not allocate memory for histogram\n");
-        return NULL;
+unsigned int * bmp8_computeHistogram(t_bmp8 * img) {
+    int histogram[256];
+    for (int i = 0; i < 256; i++) {
+        histogram[i] = 0;
     }
-
-    // Loop over all pixels in the image data
-    for (int i = 0; i < img->dataSize; i++) {
-        // Get the pixel value (0-255)
-        int pixel = (unsigned char)img->data[i];
-        // Increase the count for that pixel value in the histogram
-        hist[pixel]++;
+    for (int i = 0; img->width ; i++) {
+        for (int j = 0; img->height ; j++) {
+            histogram[img->data[i+j]]++;//1. Calculate the histogram of the original image.
+        }
     }
-
-    // Return the histogram array (int[256])
-    return hist;
+    return histogram;
 }
 
 

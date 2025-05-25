@@ -143,24 +143,73 @@ void bmp24_brightness (t_bmp24 * img,int value) {
     }
 }
 
-t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int KernelSize) {
-    int n = KernelSize / 2;
-    unsigned char *newData = (unsigned char *)malloc(INFO_SIZE * sizeof(unsigned char));
-    memcpy(newData, img->data, INFO_SIZE * sizeof(unsigned char)); //memcpy is a function included in the library string.h which allows us to copy a memory block.
-    for (unsigned int y = 1;y < img->height-1; y++) {
-        for (unsigned int x = 1; x < img->width -1;x++) {
-            float sum = 0.0f;
-            for (int j = -n; j <= n; j++) {
-                for (int i = -n; i <= n; i++) {
-                    int pixel = img->data[(y+j) * img->width + (x-i)];
-                    sum += pixel * kernel[j + n][i + n];
-                }
-            }
-            if (sum > 255) sum = 255;
-            if (sum < 0) sum = 0;
-            newData[y * img->width + x] = (unsigned char)sum;
+
+t_pixel bmp24_convolution(t_bmp24 *img, int x, int y, float **kernel, int kernelSize) {
+    int offset = kernelSize / 2;
+    float redSum = 0, greenSum = 0, blueSum = 0;
+    for (int i = -offset; i <= offset; i++) { //In order to multiply the pixel and the ones surrounding it with the Kernel Matrix, we need to use a nested loop to traverse the whole matrix
+        for (int j = -offset; j <= offset; j++) {
+            int x_coordinate = x +j;
+            int y_coordinate =y + i;
+            t_pixel p = img->data[y_coordinate][x_coordinate];  // Get access to the elements in the pixel matrix
+            float k = kernel[i + offset][j + offset];// Get access to the elements in the Kernel matrix
+            redSum += p.red * k; //Multiply the pixel value by its respective kernel value, and add to the sum.
+            greenSum += p.green * k;
+            blueSum += p.blue * k;
         }
     }
-    free(img->data);
-    img->data = newData;
+    t_pixel new_pixel;
+    new_pixel.red   = (uint8_t)fminf(fmaxf(redSum, 0), 255); //Use of fminf and fmaxf to assure the value stays between 0 and 255
+    new_pixel.green = (uint8_t)fminf(fmaxf(greenSum, 0), 255);
+    new_pixel.blue  = (uint8_t)fminf(fmaxf(blueSum, 0), 255);
+    return new_pixel;
 }
+void bmp24_equalize(t_bmp24 * img) {
+    int histogram[256];
+    int gray;
+    int U;
+    int V;
+    for (int i = 0; i < 256; i++) {
+        histogram[i] = 0;
+    }
+    for (int i = 0; img->width ; i++) {
+        for (int j = 0; img->height ; j++) {
+            gray = 0.299*img->data[i][j].red + 0.587*img->data[i][j].green + 0.114*img->data[i][j].blue;
+            U = -0.14713*img->data[i][j].red-0.28886 * img->data[i][j].green+0.436*img->data[i][j].blue;
+            V = 0.615 * img->data[i][j].red - 0.51499*img->data[i][j].green - 0.10001*img->data[i][j].blue;
+            histogram[gray]++;//1. Calculate the histogram of the original image.
+        }
+    }
+    int cumul_histogram[256];
+    cumul_histogram[0] = histogram[0];
+    int min=histogram[0];
+    int nb_pixels = 0;
+    for (int i = 1; i < 256; i++) {
+        cumul_histogram[i] = histogram[i]+cumul_histogram[i-1];//2. Calculate the cumulative histogram using a CDF.
+        if (cumul_histogram[i] < min || min ==0) {
+            min = cumul_histogram[i];
+        }
+    }
+    int hist_eq[256];
+    for (int i = 0; i < 256; i++) {
+        hist_eq[i]=round((cumul_histogram[i]-min)/(nb_pixels-min) * 255);//3. Normalize the CDF to obtain a new scale of gray levels.
+
+    }
+    int Y = hist_eq[(int)round(gray)];
+    for (int i = 0; i < img->height; i++) {
+        for (int j = 0; j < img->width; j++) {
+            int R = img->data[i][j].red;
+            int G = img->data[i][j].green;
+            int B = img->data[i][j].blue;
+            double Y = 0.299 * R + 0.587 * G + 0.114 * B;
+            double U = -0.14713 * R - 0.28886 * G + 0.436 * B;
+            double V = 0.615 * R - 0.51499 * G - 0.10001 * B;
+            int R_1 = round(Y + 1.13983 * V);
+            int G_1 = round(Y - 0.39465 * U - 0.58060 * V);
+            int B_1 = round(Y + 2.03211 * U);
+            img->data[i][j].red  = fminf(fmaxf(R_1, 0), 255);
+            img->data[i][j].green = fminf(fmaxf(G_1, 0), 255);
+            img->data[i][j].blue  = fminf(fmaxf(B_1, 0), 255);
+        }
+    }
+}//4. Apply the transformation to each pixel of the original image using the new scale of gray levels.
